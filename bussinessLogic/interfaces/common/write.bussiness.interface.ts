@@ -1,6 +1,10 @@
-import {Document} from 'mongoose';
-export interface IWriteBussiness<T>{
-    create(item:T):Promise<Document>;
-    update(id:String,item:T):Promise<Document>;
-    delete(id:String):Promise<Document>;
-} 
+import { Document } from "mongoose";
+export interface IWriteBussiness<T> {
+  create: (item: T, callback: (error: any, result: any) => void) => void;
+  update: (
+    _id: string,
+    item: T,
+    callback: (error: any, result: any) => void
+  ) => void;
+  delete: (_id: string, callback: (error: any, result: any) => void) => void;
+}

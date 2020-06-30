@@ -1,32 +1,43 @@
-import {RoleRepository} from '../repository/role.repository';
-import {IRoleBussiness} from './interfaces/role.bussiness.inteface';
-import {IRole} from '../models/Interfaces/role.interface';
+import { RoleRepository } from "../repository/role.repository";
+import { IRoleBussiness } from "./interfaces/role.bussiness.inteface";
+import { IRole } from "../models/Interfaces/role.interface";
+export class RoleBussiness implements IRoleBussiness {
+  private _roleRepository: RoleRepository;
+  constructor() {
+    this._roleRepository = new RoleRepository();
+  }
 
-export class RoleBussiness implements IRoleBussiness{
-    private _roleRepository : RoleRepository;
-    constructor(){
-        this._roleRepository = new RoleRepository();
-    }
+  create(item: IRole, callback: (error: any, result: any) => void) {
+    item.role_name = `${process.env.USER_ROLL_SUFFICS}_${item.role_name}`;
+    this._roleRepository.create(item, callback);
+  }
 
-    async create(item : IRole ){
-      const res = await this._roleRepository.create(item);
-      return res;
-    } 
+  update(
+    _id: string,
+    item: IRole,
+    callback: (error: any, result: any) => void
+  ) {
+    this._roleRepository.findOne(_id, (err, res) => {
+      if (err) callback(err, res);
+      else this._roleRepository.update(res._id, item, callback);
+    });
+  }
 
-    async update(id:String , item :IRole){
-     const res = await this._roleRepository.update(id,item);
-     return res;
-    }
+  find(
+    callback: (error: any, result: any) => void,
+    queryObject = {},
+    withQuery = false
+  ) {
+    withQuery
+      ? this._roleRepository.findByOption(callback, queryObject)
+      : this._roleRepository.find(callback);
+  }
 
-    async find(item:IRole){
-        return this._roleRepository.find(item)
-    }
+  findOne(_id: string, callback: (error: any, result: IRole) => void) {
+    this._roleRepository.findOne(_id, callback);
+  }
 
-    async findOne(itemId:String){
-       return this._roleRepository.findOne(itemId);
-    }
-
-    async delete(itemId:String){
-        return this._roleRepository.delete(itemId);
-    }
+  delete(_id: string, callback: (error: any, result: any) => void) {
+    this._roleRepository.delete(_id, callback);
+  }
 }

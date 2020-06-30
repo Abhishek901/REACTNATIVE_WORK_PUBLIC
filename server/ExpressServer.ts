@@ -10,8 +10,6 @@ import * as cookieParser from 'cookie-parser'
 import * as session from 'express-session';
 import * as path from 'path'
 import { noCache } from './middlewares/NoCacheMiddleware'
-import DatadogStatsdMiddleware from './middlewares/DatadogStatsdMiddleware'
-import { addServicesToRequest } from './middlewares/ServiceDependenciesMiddleware'
 import BackendRouter from '../routes/router';
 const rateLimit = require("express-rate-limit");
 require('../dataAccess/db/db');
@@ -49,7 +47,7 @@ export class ExpressServer {
     public kill() {
         if (this.httpServer) this.httpServer.close()
     }
-    
+
 
     private setupSecurityMiddlewares(server: Express) {
         server.use(hpp())
@@ -78,10 +76,10 @@ export class ExpressServer {
             saveUninitialized: true,
             secret: 'keyboard cat',
             cookie: {
-              maxAge: 60000,
-              secure: false
+                maxAge: 60000,
+                secure: false
             }
-          }));
+        }));
         const baseRateLimitingOptions = {
             windowMs: 15 * 60 * 1000, // 15 min in ms
             max: 1000,
@@ -91,7 +89,7 @@ export class ExpressServer {
     }
     private configureStaticAssets(server: Express) {
         console.log('Congiguring static assest..');
-        server.use('/public', express.static('public/images'))
+        server.use('/public', express.static('public'))
     }
     // private setupTelemetry(server: Express) {
     //     DatadogStatsdMiddleware.applyTo(server, {
@@ -111,4 +109,4 @@ export class ExpressServer {
         router.load(server, 'controllers')
     }
 }
-    
+

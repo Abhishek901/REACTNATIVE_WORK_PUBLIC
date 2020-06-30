@@ -1,82 +1,185 @@
-import {Request,Response,Router} from 'express';
-import  * as _ from "lodash";
-import * as jwt from "jsonwebtoken";
-import { IUserInterface } from '../../../models/Interfaces/user.interface';
-import { IOTP } from '../../../models/Interfaces/otp.interface';
-import { Error } from 'mongoose';
-import {OTPBussiness} from '../../../bussinessLogic/otp.business';
+import { Request, Response, Router } from "express";
+import { IOTP } from "../../../models/Interfaces/otp.interface";
+import { Error, ConnectionStates } from "mongoose";
+import { AuthBussiness } from "../../../bussinessLogic/auth.business";
+import AuthMiddlewares from "../../../server/middlewares/authMiddlewares/auth.base.middlware"
+interface IsystemOTP {
+  OTP: Number;
+  time: Date;
+}
+
+interface UserResults {
+  isActive: Boolean,
+  tokens: Array<String>
+}
 
 
-class Authentication  {
-    private _router : Router;
-    private _systemOTP :()=>Number;
+interface IsystemOTPSchema extends Array<IsystemOTP> { }
 
-    constructor(router:Router){
-        this._router = router;
-        this._router.post('/', this.signUp);
-        this._router.post('/verify',this.verify);
-        this._systemOTP = undefined;
-        
+class Authentication {
+  private _router: Router;
+  /*
+  TEMP STORAGE SYSTEM FOR OTP
+  @parems : {otp:Number,phoneNumber:Number}
+  */
+  public _systemOTP: IsystemOTPSchema;
+
+  constructor(router: Router) {
+    const multerUpload = new AuthBussiness();
+    this._router = router;
+    this._router.post("/signup", this.signUp);
+    this._router.post("/verify", this.verify);
+    this._router.post("/login", this.login);
+    this._router.post("/upload", multerUpload.uploadMular().single('photo') ,this.upload);
+    this._systemOTP = [];
+  }
+
+  /*
+@parems {
+  phoneNumber: Number,
+}
+*/
+
+  public signUp = async (req: Request, res: Response, next) => {
+    const OTP = await this._sendOTP(req.body.phoneNumber);
+    console.log('OTP_IO_UNIT');
+    console.log(OTP);
+    if (OTP !== undefined) {
+      res.status(200).send({
+        message: "OTP sended successfully",
+        number: req.body.phoneNumber,
+        ok: true,
+
+      });
+    } else {
+      res.status(400).send({ message: new Error("OTP MUST BE A NUMBER") });
     }
+  };
 
-    public signUp = async (req:Request,res:Response,next) =>{
-
-      const OTPLogic = new OTPBussiness();
-      const input:IOTP = {phoneNumber:req.body.phoneNumber}
-      try{
-
-        let getOTP = await OTPLogic.sendOTP(input);
-        this._systemOTP = function(){
-            return getOTP
-        }
-        req.session.otp = getOTP;
-        
-        if(getOTP !== undefined && typeof getOTP == "number"){
-            res.status(200).send({message:'OTP sended successfully',ok:true});
-        }else{
-            res.status(400).send({message:new Error('OTP MUST BE A NUMBER')});
-        }
-      }catch(err){
-         res.status(500).send(new Error('Unable to send OTP'));
-      }
-      
+  /*
+@parems {
+  phoneNumber: Number,
+}
+*/
+  public login = async (req: Request, res: Response, next) => {
+    const OTP = await this._sendOTP(req.body.phoneNumber);
+    console.log('OTP_IO_UNIT');
+    console.log(OTP);
+    if (OTP !== undefined) {
+      res.status(200).send({
+        message: "OTP sended successfully",
+        number: req.body.phoneNumber,
+        ok: true,
+      });
+    } else {
+      res.status(400).send({ message: "OTP MUST BE A NUMBER" });
     }
+  };
 
+  /*
+@parems {
+  otp:Number,
+  phoneNumber: Number,
+  fullName?:String
+}
+*/
 
-    public verify = (req:Request,res:Response,next) => {
-        const userInputOTP:number = Number(req.body.otp);
-        let systemOTP = this._systemOTP();
-       
-        if(userInputOTP !== systemOTP){
-            res.status(401).send({message:"OTP NOT MATCHED"});
-        }else{
-            res.status(200).send({message:"OTP MATCHED"});
-        }
-    }
+  public verify = async (req: Request, res: Response, next) => {
+    if (this._systemOTP !== undefined) {
+      const userInputOTP: number = Number(req.body.otp);
+      const systemOTPObject: IsystemOTP = this._systemOTP[req.body.phoneNumber];
+      if (systemOTPObject !== undefined) {
+        const systemOTP = systemOTPObject.OTP;
+        if (userInputOTP === systemOTP && systemOTPObject.OTP !== undefined) {
+          const authLogic = new AuthBussiness();
+          try {
+            if (Boolean(req.body.fullName)) {
+              console.log("in signup section ..................................");
+              try {
+                const results = await authLogic.handleSingup(req.body);
+                res.status(201).send({
+                  message: 'Account Created !!',
+                  user_data: JSON.parse(JSON.stringify(results)),
+                  moveto: "login",
+                });
+              } catch (err) {
+                console.log(err)
+                if (err == 'account_exists') {
+                  res.status(400).send({
+                    message: 'Account Already Exists !!',
+                    moveto: "login",
+                  });
+                } else {
+                  res.status(500).send({
+                    message: 'Internal Error Contact Admin !!',
+                    moveto: "signup",
+                  });
+                }
+              }
+            } else {
+              console.log('in login section....')
+              try {
+                let results = await authLogic.handleLogin(req.body);
+                const user_results: UserResults = JSON.parse(JSON.stringify(results));
+                if (user_results.isActive) {
+                  res.status(300).send({
+                    message: "logged in succesfully you need ....",
+                    tokens: user_results.tokens,
+                    moveto: "user_account",
+                  });
+                } else {
+                  res.status(301).send({
+                    message: "Your account is not active please contact to Admin ....",
+                    tokens: user_results.tokens,
+                    moveto: "verify_accounts",
+                  });
+                }
+              } catch (err) {
 
-    private _createTokens = async (user:IUserInterface)=>{
-        
-        const createToken = jwt.sign({
-            user:_.pick(user,['_id','role']),
-        },process.env.CLINT_SECRATE_KEY_1,{
-            expiresIn:'1m'
-        });
-
-        const createReffreshToken = jwt.sign(
-            {
-                user:_.pick(user,['_id']),
-            },
-            process.env.CLINT_SECRATE_KEY_2,
-            {
-              expiresIn:'7d'
+              }
             }
-        );
+          } catch (err) {
+            console.log('here are fine conditions for adding error handeling module................................ ')
+            res.status(500).send({ message: JSON.stringify(err) });
+          }
+        } else {
+          res.status(401).send(
+            JSON.stringify({
+              message: "OTP not matched please try again...",
+            })
+          );
+        }
+      } else {
+        res
+          .status(500)
+          .send({ message: "INTERNAL_ERROR :: OTP_STORAGE_UNIT_RESET" });
+      }
+    } else {
+      res
+        .status(500)
+        .send({ message: "INTERNAL_ERROR ::OTP_STORAGE_MEMORY_UNIT" });
+    }
+  };
 
-        return Promise.all([createToken,createReffreshToken]);
-    }   
-    
-    
+  private _sendOTP = async (phoneNumber: number) => {
+    const OTPLogic = new AuthBussiness();
+    const input: IOTP = { phoneNumber: phoneNumber };
+    try {
+      console.log(input);
+      let OTP = await OTPLogic.sendOTP(input);
+      this._systemOTP[phoneNumber] = { OTP: OTP, time: new Date() };
 
+      return OTP;
+    } catch (err) {
+      return undefined;
+    }
+  };
+
+  public upload = async (req: Request, res: Response, next) => {
+    res.status(200).json(req['file']);
+    const UplaodBussiness = new AuthBussiness();
+    // UplaodBussiness.upload(req.body);    
+  }
 
 }
 

@@ -1,4 +1,5 @@
-export default interface read<T>{
-    find(item:T):Promise<T[]>
-    findOne(itemID:String):Promise<T>
+export default interface read<T> {
+  find: (callback: (error: any, result: Array<T>) => void) => void;
+  findOne: (id: string, callback: (error: any, result: T) => void) => void;
+  
 }

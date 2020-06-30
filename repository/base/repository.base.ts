@@ -1,31 +1,64 @@
-import IRead from '../interfaces/base/read.interface';
-import IWrite from '../interfaces/base/write.interface';
+import IRead from "../interfaces/base/read.interface";
+import IWrite from "../interfaces/base/write.interface";
+import * as mongoose from "mongoose";
+import { Schema, Document, Model, Types } from "mongoose";
 
-import { Schema,Document ,Model} from 'mongoose';
+export class RepositoryBase<T extends Document> implements IRead<T>, IWrite<T> {
+  private _model: Model<Document>;
 
-export class RepositoryBase <T extends Document> implements IRead<T> , IWrite<T>{
-   private _model:Model<Document>;
+  constructor(schemaModel: Model<Document>) {
+    this._model = schemaModel;
+  }
+  
+  create(item: T, callback: (error: any, result: any) => void) {
+    this._model.create(item, callback);
+  }
+  find(callback: (error: any, result: any) => void) {
+    this._model.find({}, callback);
+  }
+  update(
+    _id: mongoose.Types.ObjectId,
+    item: T,
+    callback: (error: any, result: any) => void
+  ) {
+    this._model.update({ _id: _id }, item, callback);
+  }
 
-   constructor(schemaModel:Model<Document>){
-         this._model = schemaModel;
-   }
+  delete(_id: string, callback: (error: any, result: any) => void) {
+    this._model.remove({ _id: this.toObjectId(_id) }, (err) =>
+      callback(err, null)
+    );
+  }
 
-   async create(item:T):Promise<Document>{
-        const result = await this._model.create(item);
-        return result;       
-   }
+  findOne(_id: string, callback: (error: any, result: T) => void) {
+    this._model.findById(_id, callback);
+  }
 
-   update(id: String, item: T): Promise<Document> {
-      throw new Error('Method not implemented.');
-   }
-   delete(id: String): Promise<Document> {
-      throw new Error('Method not implemented.');
-   }
-   find(item: T): Promise<T[]> {
-      throw new Error('Method not implemented.');
-   }
-   findOne(id: String): Promise<T> {
-      throw new Error('Method not implemented.');
-   }
+  findByPopulate = (callback, query, refKey) => {
+    this._model
+      .find(query)
+      .populate(refKey)
+      .exec(callback);
+  };
 
+  findByMultiplePopulateBase = (callback, query, refArray) => {
+    let docs = this._model.find(query);
+    const ittetaions = refArray.map((ref) => {
+      docs = docs.populate(ref)
+    })
+
+    docs.find(query).exec(callback)
+  }
+
+  findByOption(callback: (error: any, result: any) => void, queryObject) {
+    this._model.find(queryObject, callback);
+  }
+
+  findOneAndUpdate(_id: string, doc, callback, options = {}) {
+    this._model.findOneAndUpdate({ _id: _id }, doc, callback)
+  }
+
+  private toObjectId(_id: string): Types.ObjectId {
+    return Types.ObjectId.createFromHexString(_id);
+  }
 }

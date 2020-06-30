@@ -1,36 +1,52 @@
-import {UserRepository} from '../repository/user.repository';
-import {IUserBussiness} from './interfaces/user.bussiness.interface';
-import {IUserInterface} from '../models/Interfaces/user.interface';
+import { UserRepository } from "../repository/user.repository";
+import { IUserBussiness } from "./interfaces/user.bussiness.interface";
+import { IUserInterface } from "../models/Interfaces/user.interface";
 
+export class UserBussiness implements IUserBussiness {
+  private _userRepository: UserRepository;
 
-export class UserBussiness implements IUserBussiness{
-     private _userRepository : UserRepository ;
+  constructor() {
+    this._userRepository = new UserRepository();
+  }
 
-     constructor(){
-         this._userRepository = new UserRepository();
-     }
+  create(item: IUserInterface, callback: (error: any, result: any) => void) {
+    this._userRepository.create(item, callback);
+  }
 
-     async create(item:IUserInterface){
-         const res = await this._userRepository.create(item);
-         return res;
-     }
+  update(
+    _id: string,
+    item: IUserInterface,
+    callback: (error: any, result: any) => void
+  ) {
+    this._userRepository.findOne(_id, (err, res) => {
+      if (err) callback(err, res);
+      else this._userRepository.update(res._id, item, callback);
+    });
+  }
 
-     async update(id:String, item:IUserInterface ){
-        const res = await this._userRepository.update(id,item);
-        return res;
-     }
-    
-     async find(item:IUserInterface){
-        return this._userRepository.find(item);
-     }
+  find(
+    callback: (error: any, result: Array<IUserInterface>) => void,
+    queryObject = {},
+    withOption: boolean = false
+  ) {
+    withOption
+      ? this._userRepository.findByOption(callback, queryObject)
+      : this._userRepository.find(callback);
+  }
 
-     async findOne(itemID:String){
-        return this._userRepository.findOne(itemID); 
-     }
+  findByPopulate = (callback, query, refkey) => {
+    this._userRepository.findByPopulateRole(callback, query, refkey);
+  };
 
-     async delete(itemID:string){
-        return this._userRepository.delete(itemID);
-     }
+  findOne(_id: string, callback: (error: any, result: IUserInterface) => void) {
+    this._userRepository.findOne(_id, callback);
+  }
 
+  delete(_id: string, callback: (error: any, result: any) => void) {
+    this._userRepository.delete(_id, callback);
+  }
 
+  findOneAndUpdate(_id: string, doc, callback: (error: any, result: any) => void) {
+    this._userRepository.findOneAndUpdate(_id, doc, callback)
+  }
 }
