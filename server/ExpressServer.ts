@@ -86,6 +86,9 @@ export class ExpressServer {
             message: 'Our API is rate limited to a maximum of 1000 requests per 15 minutes, please lower your request rate'
         };
         server.use('/api/', rateLimit(baseRateLimitingOptions));
+        server.use('/', (req, res) => {
+            res.send('Welcome to LogixKart Backend Terminal......')
+        });
     }
     private configureStaticAssets(server: Express) {
         console.log('Congiguring static assest..');
