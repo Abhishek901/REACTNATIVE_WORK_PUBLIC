@@ -12,13 +12,13 @@ const UserSchema = new mongooseInstance.Schema({
     required: true,
   },
   profilePic: {
-    type: String
+    type: String,
   },
   docs: {
-    type: Array
+    type: Array,
   },
   incomeType: {
-    type: String
+    type: String,
   },
   role: {
     type: mongooseInstance.Schema.Types.ObjectId,
@@ -45,7 +45,7 @@ const UserSchema = new mongooseInstance.Schema({
     type: Date,
     required: false,
   },
-}).pre<IUserInterface>("save", function (next) {
+}).pre<IUserInterface>("save", function(next) {
   if (this.isNew) {
     this.created_at = new Date();
   } else {

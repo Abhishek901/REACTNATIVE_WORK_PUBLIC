@@ -30,7 +30,7 @@ export default class RouterClass {
         const baseRoute = "/" + dirs.join("/");
         console.warn("Created route: " + baseRoute + " for " + fullName);
         const controllerClass = require(path.join("../", fullName));
-        // console.warn('getting controller class ' + controllerClass);
+        //console.warn("getting controller class " + controllerClass);
         const strictRateLimit = rateLimit({
           windowMs: 15 * 60 * 1000, // 15 min in ms
           max: 200,

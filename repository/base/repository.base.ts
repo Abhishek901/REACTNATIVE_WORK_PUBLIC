@@ -9,7 +9,7 @@ export class RepositoryBase<T extends Document> implements IRead<T>, IWrite<T> {
   constructor(schemaModel: Model<Document>) {
     this._model = schemaModel;
   }
-  
+
   create(item: T, callback: (error: any, result: any) => void) {
     this._model.create(item, callback);
   }

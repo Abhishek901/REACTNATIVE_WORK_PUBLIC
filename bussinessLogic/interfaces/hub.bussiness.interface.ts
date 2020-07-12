@@ -1,6 +1,4 @@
-import { IBaseBussiness } from '../interfaces/base/base.business.interface';
-import { IHubInterface } from '../../models/Interfaces/hub.interface';
+import { IBaseBussiness } from "../interfaces/base/base.business.interface";        
+import { IHubInterface } from "../../models/Interfaces/hub.interface";
 
-export interface IHunBussiness extends IBaseBussiness<IHubInterface> {
-
-}
+export interface IHunBussiness extends IBaseBussiness<IHubInterface> {}

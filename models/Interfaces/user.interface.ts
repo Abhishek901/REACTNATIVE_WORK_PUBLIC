@@ -4,6 +4,10 @@ export interface IUserInterface extends Document {
   fullName: String;
   phoneNumber: Number;
   role: Schema.Types.ObjectId;
+  account_number: Number;
+  IFSC: Number;
+  NameInAccount: String;
+  BankName: String;
   creaedAt: Date;
   address: [
     {

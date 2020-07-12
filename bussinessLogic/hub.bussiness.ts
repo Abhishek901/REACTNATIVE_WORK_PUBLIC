@@ -1,5 +1,5 @@
-import { HubRepository } from "../repository/hub.repository"
-import { IHunBussiness } from "./interfaces/hub.bussiness.interface"
+import { HubRepository } from "../repository/hub.repository";
+import { IHunBussiness } from "./interfaces/hub.bussiness.interface";
 import { IHubInterface } from "../models/Interfaces/hub.interface";
 
 export class HubBussiness implements IHunBussiness {
@@ -46,7 +46,11 @@ export class HubBussiness implements IHunBussiness {
     this._HubRepository.delete(_id, callback);
   }
 
-  findOneAndUpdate(_id: string, doc, callback: (error: any, result: any) => void) {
-    this._HubRepository.findOneAndUpdate(_id, doc, callback)
+  findOneAndUpdate(
+    _id: string,
+    doc,
+    callback: (error: any, result: any) => void
+  ) {
+    this._HubRepository.findOneAndUpdate(_id, doc, callback);
   }
 }

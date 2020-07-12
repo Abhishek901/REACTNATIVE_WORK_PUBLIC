@@ -7,13 +7,15 @@ import { RoleBussiness } from "./role.bussiness";
 import { Role } from "../models/role.model";
 import { IOTP } from "../models/Interfaces/otp.interface";
 import fetch from "node-fetch";
-import * as multer from 'multer';
-const uuidv4 = require('uuid-v4');
-import * as path from 'path';
+import * as multer from "multer";
+const uuidv4 = require("uuid-v4");
+import * as path from "path";
 
 interface UserResults {
-  isActive: Boolean,
-  tokens: Array<String>
+  isActive: Boolean;
+  tokens: Array<String>;
+  user_details: IUserInterface;
+  expiresIn: String;
 }
 export class AuthBussiness implements IAuthBussiness<IOTP> {
   private generateOTP = (count: number) => {
@@ -29,8 +31,11 @@ export class AuthBussiness implements IAuthBussiness<IOTP> {
     const otp = this.generateOTP(Number(process.env.OTP_COUNT));
 
     const phoneNumber: number = Number(input.phoneNumber);
-    console.log('before request')
+    console.log("before request");
     let fetchPointer = await fetch(
+      `https://enterprise.smsgupshup.com/GatewayAPI/rest?method=SendMessage&send_to=${phoneNumber}&msg=${process.env.MESSAGE}${otp}.%20Please%20enter%20this&msg_type=TEXT&userid=${process.env.MESSAGE_API_USERID}&auth_scheme=plain&password=${process.env.MESSAGE_API_PASSWORD}&v=1.1&format=text`
+    );
+    console.log(
       `https://enterprise.smsgupshup.com/GatewayAPI/rest?method=SendMessage&send_to=${phoneNumber}&msg=${process.env.MESSAGE}${otp}.%20Please%20enter%20this&msg_type=TEXT&userid=${process.env.MESSAGE_API_USERID}&auth_scheme=plain&password=${process.env.MESSAGE_API_PASSWORD}&v=1.1&format=text`
     );
     const response = await fetchPointer;
@@ -46,7 +51,7 @@ export class AuthBussiness implements IAuthBussiness<IOTP> {
   };
 
   public handleLogin = (user: IUserInterface) => {
-    console.log('Hadeling Login .........................................')
+    console.log("Hadeling Login .........................................");
     const phoneNumber = user.phoneNumber;
     return new Promise(async (resolve, reject) => {
       try {
@@ -59,7 +64,12 @@ export class AuthBussiness implements IAuthBussiness<IOTP> {
                 reject(err);
               }
               const tokens = await this._createTokens(result);
-              const user_results: UserResults = { tokens: tokens, isActive: result[0].isActive }
+              const user_results: UserResults = {
+                tokens: tokens,
+                isActive: result[0].isActive,
+                user_details: result[0],
+                expiresIn: "60000",
+              };
               resolve(user_results);
             },
             { phoneNumber: phoneNumber },
@@ -77,9 +87,9 @@ export class AuthBussiness implements IAuthBussiness<IOTP> {
   };
 
   public handleSingup = async (user: IUserInterface) => {
-    console.log('Hadeling signup .........................................')
+    console.log("Hadeling signup .........................................");
     const results = await this._checkExist(user.phoneNumber);
-    console.log(results);
+
     return new Promise((resolve, reject) => {
       if (results == false) {
         try {
@@ -96,10 +106,14 @@ export class AuthBussiness implements IAuthBussiness<IOTP> {
                 user.role = roleId;
                 AddUserLogic.create(user, (err, result) => {
                   if (err) {
-                    console.log('here in adding user first time with error......')
+                    console.log(
+                      "here in adding user first time with error......"
+                    );
                     reject(err);
                   }
-                  console.log('here in adding user first time successfully......')
+                  console.log(
+                    "here in adding user first time successfully......"
+                  );
                   return resolve(result);
                 });
               } else {
@@ -123,12 +137,12 @@ export class AuthBussiness implements IAuthBussiness<IOTP> {
   private _checkExist = async (phoneNumber: Number) => {
     const user = new UserBussiness();
     const queryObject = { phoneNumber: phoneNumber };
-    console.log('checking for existance of account here.....')
+    console.log("checking for existance of account here.....");
     return new Promise((resolve, reject) => {
       user.find(
         (err, result: Array<IUserInterface>) => {
           if (err) {
-            reject(err)
+            reject(err);
           }
           //console.log(result);
           if (result.length == 1) {
@@ -149,6 +163,7 @@ export class AuthBussiness implements IAuthBussiness<IOTP> {
     const createToken = jwt.sign(
       {
         user: _.pick(user[0], ["_id"]),
+        role: user[0].role.role_name,
       },
       process.env.CLINT_SECRATE_KEY_1,
       {
@@ -175,7 +190,7 @@ export class AuthBussiness implements IAuthBussiness<IOTP> {
         Files will be saved in the 'uploads' directory. Make
         sure this directory already exists!
       */
-      cb(null, './public');
+      cb(null, "./public");
     },
     filename: (req, file, cb) => {
       /*
@@ -192,9 +207,7 @@ export class AuthBussiness implements IAuthBussiness<IOTP> {
   });
 
   public uploadMular = () => {
-    const storage = this.storage
-    return multer({ storage })
+    const storage = this.storage;
+    return multer({ storage });
   };
-
-
 }

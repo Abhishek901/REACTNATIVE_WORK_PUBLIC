@@ -47,7 +47,6 @@ class RoleController implements IBaseController<RoleBussiness> {
           res.status(500).send({ message: error });
         }
         res.status(200).send(results);
-
       },
       {},
       true

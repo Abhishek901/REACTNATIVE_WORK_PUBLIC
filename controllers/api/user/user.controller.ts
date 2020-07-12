@@ -2,19 +2,18 @@ import { Request, Router, Response } from "express";
 import { UserBussiness } from "../../../bussinessLogic/user.bussiness";
 import { IBaseController } from "../../../baseController/base/base.controller.interface";
 import { IUserInterface } from "../../../models/Interfaces/user.interface";
-import AuthMiddlewares from "../../../server/middlewares/authMiddlewares/auth.base.middlware"
+import AuthMiddlewares from "../../../server/middlewares/authMiddlewares/auth.base.middlware";
 class UserController implements IBaseController<UserBussiness> {
   private router: Router;
   constructor(router: Router, limit) {
     this.router = router;
-    this.router.post("/", AuthMiddlewares.base, limit, this.create);
+    this.router.post("/", limit, this.create);
     this.router.delete("/:id", limit, this.delete);
     this.router.get("/", limit, this.find);
     this.router.get("/me", AuthMiddlewares.base, limit, this.getCurrentUser);
     this.router.get("/:id", AuthMiddlewares.base, this.findOne);
     this.router.put("/update", AuthMiddlewares.base, this.update);
     this.router.put("/masterupdate", this.masterupdate);
-
   }
 
   create = (req: Request, res: Response) => {
@@ -26,7 +25,6 @@ class UserController implements IBaseController<UserBussiness> {
       }
       res.status(200).send(result);
     });
-    res.send(JSON.stringify(req.body));
   };
 
   delete = (req: Request, res: Response) => {
@@ -58,27 +56,27 @@ class UserController implements IBaseController<UserBussiness> {
     const FindUserLogic = new UserBussiness();
     const callback = (error, results) => {
       if (error) {
-        res.status(500).send({ message: error })
+        res.status(500).send({ message: error });
       }
-      res.status(200).send({ message: results })
-    }
-    const id = req.body.user.user._id
-    FindUserLogic.findOne(id, callback)
+      res.status(200).send({ message: results });
+    };
+    const id = req.body.user.user._id;
+    FindUserLogic.findOne(id, callback);
   };
 
-  findById = (req: Request, res: Response) => { };
+  findById = (req: Request, res: Response) => {};
 
   getCurrentUser = (req: Request, res: Response) => {
     const FindUserLogic = new UserBussiness();
     const callback = (error, results) => {
       if (error) {
-        res.status(500).send({ message: error })
+        res.status(500).send({ message: error });
       }
-      res.status(200).send({ message: results })
-    }
-    const query = { '_id': req.body.user.user._id }
-    FindUserLogic.findByPopulate(callback, query, 'role')
-  }
+      res.status(200).send({ message: results });
+    };
+    const query = { _id: req.body.user.user._id };
+    FindUserLogic.findByPopulate(callback, query, "role");
+  };
 
   update = (req: Request, res: Response) => {
     const UpdateOneUserLogic = new UserBussiness();
@@ -88,9 +86,9 @@ class UserController implements IBaseController<UserBussiness> {
       if (error) {
         res.status(500).send({ message: error });
       }
-      res.status(200).send({ message: result })
-    })
-  }
+      res.status(200).send({ message: result });
+    });
+  };
 
   masterupdate = (req: Request, res: Response) => {
     const UpdateOneUserLogic = new UserBussiness();
@@ -100,9 +98,8 @@ class UserController implements IBaseController<UserBussiness> {
       if (error) {
         res.status(500).send({ message: error });
       }
-      res.status(200).send({ message: result })
-    })
+      res.status(200).send({ message: result });
+    });
   };
-
 }
 module.exports = UserController;
